@@ -1,0 +1,16 @@
+// Foxaris-Theme für Euro-Office
+//
+// Wird NACH den übrigen LESS-Dateien geladen und gewinnt deshalb gegen die
+// Voreinstellungen. Regeln, die sich nicht über Variablen ausdrücken lassen,
+// stehen in overrides/ – je Bereich eine Datei.
+//
+// Bauen mit: THEME=foxaris node scripts/build-pipeline.js
+
+// Markenfarben – primary-600/700/800 aus dem Foxaris-Design-System
+@foxaris-primary:      #ea580c;
+@foxaris-primary-dark: #c2410c;
+@foxaris-primary-deep: #9a3412;
+
+@brand-primary: @foxaris-primary;
+
+@import "overrides.less";

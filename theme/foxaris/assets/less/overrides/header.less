@@ -1,0 +1,28 @@
+// --------------------------------------------------------------------------
+// Logo in der Kopfleiste
+// Upstream: apps/common/main/resources/less/header.less:167-198
+//
+// Dort steht ein Schriftzug von 86 × 20 Pixeln, in zwei Fassungen: `i` für die
+// dunkle Kopfleiste, `.logo-light i` für die helle. Wir setzen in beiden
+// Fassungen denselben Fuchskopf ein – quadratisch, deshalb die eigene Größe.
+//
+// ACHTUNG: Der Fuchs ist weiß mit ausgesparter Binnenzeichnung in der
+// Kopfleistenfarbe (#ea580c, siehe colors.less). Ändert sich diese Farbe,
+// muss foxaris-fox-white.svg mitgeändert werden.
+// --------------------------------------------------------------------------
+
+.extra #header-logo {
+  padding: 6px 6px 6px 12px;
+
+  i {
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    background-position: center;
+  }
+}
+
+.extra #header-logo i,
+.extra #header-logo.logo-light i {
+  background-image: ~"url('@{common-image-const-path}/header/foxaris-fox-white.svg')";
+}

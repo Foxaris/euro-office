@@ -1,0 +1,25 @@
+{
+  "company_name": "Foxaris",
+  "publisher_name": "Foxaris",
+  "publisher_url": "https://foxaris.com",
+  "publisher_address": "",
+  "publisher_phone": "",
+  "sales_email": "",
+  "support_email": "",
+  "support_url": "",
+  "help_url": "",
+  "app_title": "Foxaris",
+  "attribution": "Foxaris nutzt Euro-Office, das auf ONLYOFFICE von Ascensio System SIA beruht. Quelltext unserer Anpassungen: https://github.com/Foxaris/euro-office",
+
+  "loader_logo": "foxaris-fox.svg",
+  "loader_logo_dark": "foxaris-fox-white.svg",
+
+  "mobile_logo_light": "foxaris-fox.svg",
+  "mobile_logo_dark": "foxaris-fox-white.svg",
+
+  "about_logo_light": "foxaris-fox.svg",
+  "about_logo_dark": "foxaris-fox-white.svg",
+
+  "forms_logo_light": "foxaris-fox.svg",
+  "forms_logo_dark": "foxaris-fox-white.svg"
+}

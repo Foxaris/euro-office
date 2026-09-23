@@ -1,0 +1,13 @@
+// --------------------------------------------------------------------------
+// Logo im „Über"-Dialog (Desktop)
+// Die mobile Fassung läuft über @theme-about-logo-light / -dark aus
+// theme.config.mjs – dieselben Schlüssel in meta/config.json speisen beides.
+// --------------------------------------------------------------------------
+
+.about-dlg .asc-about-office:before {
+  content: ~"url('@{common-image-const-path}/about/foxaris-fox.svg')";
+
+  .theme-type-dark & {
+    content: ~"url('@{common-image-const-path}/about/foxaris-fox-white.svg')";
+  }
+}

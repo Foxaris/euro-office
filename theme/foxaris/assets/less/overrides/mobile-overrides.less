@@ -1,0 +1,32 @@
+// --------------------------------------------------------------------------
+// Mobile Editoren (iPad, Telefon)
+// Wird von theme.config.mjs nach
+// apps/common/mobile/resources/less/_theme-mobile-overrides.less kopiert und
+// von jeder mobilen app.less zuletzt eingebunden.
+// --------------------------------------------------------------------------
+
+// Markenfarbe je Dokumentart. Framework7 zieht daraus --f7-theme-color.
+// Upstream: apps/common/mobile/resources/less/colors-table.less:3
+// Die dunklen Fassungen (colors-table-dark.less) bleiben unangetastet – sie
+// stehen in höher gewichteten Selektoren und gewinnen weiterhin.
+:root {
+  --brand-word: #ea580c;
+  --brand-cell: #ea580c;
+  --brand-slide: #ea580c;
+  --brand-form: #ea580c;
+}
+
+// Der Logo-Streifen kostet 26 Pixel Höhe in einer ohnehin knappen Leiste.
+// Unsere Editoren laufen eingebettet in Foxaris – wo man ist, ist klar.
+// Alle drei Regeln zusammen, sonst bleibt eine Lücke stehen.
+.main-logo {
+  display: none;
+}
+
+.navbar.main-navbar.navbar-with-logo {
+  height: 0;
+}
+
+.page.page-with-subnavbar.page-with-logo .page-content {
+  --f7-page-subnavbar-offset: 0px;
+}

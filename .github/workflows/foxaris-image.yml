@@ -1,0 +1,181 @@
+name: Foxaris-Abbild
+
+# Baut die Editor-Oberfläche mit dem Foxaris-Theme und legt sie über das
+# veröffentlichte Euro-Office-Abbild. Kein core/server/sdkjs – nur web-apps.
+# Das Vorgehen ist von .github/workflows/e2e.yml abgeschaut, das dieselbe
+# Überlagerung für die Testläufe des Projekts benutzt.
+#
+# Gepinnt wird genau EINE Sache: BASE_IMAGE. Alles andere leitet sich daraus ab –
+# die Produktversion aus dem Abbild selbst, der passende web-apps-Commit aus dem
+# gleichnamigen Tag im DocumentServer-Repo. Beide Ableitungen scheitern laut,
+# wenn sie nicht aufgehen.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [foxaris]
+    paths:
+      - 'theme/foxaris/**'
+      - '.github/workflows/foxaris-image.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BASE_IMAGE: ghcr.io/euro-office/documentserver:v9.3.4-hotfix.1
+  BASE_TAG: v9.3.4-hotfix.1
+  IMAGE: ghcr.io/foxaris/euro-office
+  THEME: foxaris
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Theme auschecken
+        uses: actions/checkout@v4
+        with:
+          path: foxaris
+          sparse-checkout: |
+            theme/foxaris
+
+      - name: Passenden web-apps-Commit ermitteln
+        id: pin
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Der Release-Stand von web-apps steht nicht als Branch oder Tag im
+          # Repo, sondern als Submodul-Zeiger im DocumentServer-Tag.
+          SHA=$(gh api "repos/Euro-Office/DocumentServer/contents/web-apps?ref=${BASE_TAG}" --jq '.sha')
+          test -n "$SHA"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "web-apps @ $SHA (aus DocumentServer $BASE_TAG)"
+
+      - name: web-apps beim gepinnten Commit auschecken
+        uses: actions/checkout@v4
+        with:
+          repository: Euro-Office/web-apps
+          ref: ${{ steps.pin.outputs.sha }}
+          path: web-apps
+
+      - name: Theme einlegen
+        run: |
+          set -euo pipefail
+          cp -a foxaris/theme/foxaris web-apps/theme/
+          test -f web-apps/theme/foxaris/meta/config.json
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            web-apps/build/package-lock.json
+            web-apps/vendor/framework7-react/npm-shrinkwrap.json
+
+      - name: Bau-Voraussetzungen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-21-jre-headless brotli zip bzip2
+
+      - name: Basis-Abbild holen
+        run: docker pull "$BASE_IMAGE"
+
+      - name: Produktversion aus dem Abbild lesen
+        id: ver
+        run: |
+          set -euo pipefail
+          # Der Editor meldet seine Bau-Version an den Dienst. Weicht sie von
+          # dessen eigener ab, lädt der Editor zwar, aber das Dokument öffnet
+          # nie. Deshalb aus dem Abbild lesen statt hier zu pflegen.
+          VER=$(docker run --rm --entrypoint sh "$BASE_IMAGE" -c \
+            "grep -A2 'DocsAPI.DocEditor.version = function' \
+              \$(find /var/www -maxdepth 8 -path '*api/documents/api.js' | head -n1) \
+              | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1")
+          test -n "$VER"
+          echo "product_version=$VER" >> "$GITHUB_OUTPUT"
+          echo "PRODUCT_VERSION=$VER"
+
+      - name: Oberfläche bauen
+        working-directory: web-apps/build
+        env:
+          BUILD_ROOT: ${{ github.workspace }}/web-apps/deploy
+          PRODUCT_VERSION: ${{ steps.ver.outputs.product_version }}
+        run: |
+          set -euo pipefail
+          npm install
+          ( cd ../translation && python3 merge_and_check.py )
+          node scripts/build-pipeline.js
+
+      - name: Theme im Ergebnis nachweisen
+        run: |
+          set -euo pipefail
+          CSS=web-apps/deploy/web-apps/apps/documenteditor/main/app.css
+          test -f "$CSS"
+          # Wäre das Theme nicht eingeflossen, stünde hier die Vorgabe #446995.
+          grep -q -- '--toolbar-header-document: *#ea580c' "$CSS" \
+            || { echo "Foxaris-Farben fehlen im gebauten CSS." >&2; exit 1; }
+          echo "Farben im Bau angekommen."
+
+      - name: Abbild bauen
+        run: |
+          set -euo pipefail
+          cat > overlay.Dockerfile <<'EOF'
+          ARG BASE_IMAGE
+          FROM ${BASE_IMAGE}
+          COPY . /tmp/new-web-apps/
+          # Der Installationspfad hängt am Markennamen (/var/www/<marke>/documentserver);
+          # über das sdkjs-Verzeichnis finden wir ihn, ohne ihn zu kennen.
+          RUN set -eux; \
+              root="$(dirname "$(find /var/www -maxdepth 5 -type d -name sdkjs -path '*documentserver*' | head -n1)")"; \
+              test -n "$root"; \
+              cp -a /tmp/new-web-apps/. "$root/web-apps/"; \
+              rm -rf /tmp/new-web-apps
+          EOF
+          docker build \
+            --build-arg BASE_IMAGE="$BASE_IMAGE" \
+            -t "$IMAGE:$BASE_TAG" \
+            -t "$IMAGE:$BASE_TAG-${GITHUB_SHA::7}" \
+            -f overlay.Dockerfile \
+            web-apps/deploy/web-apps
+
+      - name: Rauchprobe am fertigen Abbild
+        run: |
+          set -euo pipefail
+          docker run -d --name probe -p 8099:80 \
+            -e JWT_ENABLED=true -e JWT_SECRET=probe-secret \
+            -e EXAMPLE_ENABLED=false "$IMAGE:$BASE_TAG"
+          for i in $(seq 1 90); do
+            if curl -fsS http://localhost:8099/healthcheck | grep -q true; then break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:8099/healthcheck | grep -q true
+          curl -fsSL http://localhost:8099/web-apps/apps/documenteditor/main/app.css \
+            | grep -q -- '--toolbar-header-document: *#ea580c'
+          curl -fsSL http://localhost:8099/web-apps/apps/api/documents/api.js \
+            | grep -q "${{ steps.ver.outputs.product_version }}"
+          # Die Logos landen über deploy-theme-images im Abbild – ohne sie
+          # zeigt die Kopfleiste ein leeres Feld statt des Fuchses.
+          curl -fsSL -o /dev/null \
+            http://localhost:8099/web-apps/apps/common/main/resources/img/header/foxaris-fox-white.svg
+          docker rm -f probe
+          echo "Abbild antwortet, trägt Farben, Logo und die erwartete Version."
+
+      - name: An GHCR anmelden
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Veröffentlichen
+        run: |
+          set -euo pipefail
+          docker push "$IMAGE:$BASE_TAG"
+          docker push "$IMAGE:$BASE_TAG-${GITHUB_SHA::7}"
+          echo "veröffentlicht: $IMAGE:$BASE_TAG"
