@@ -122,25 +122,38 @@ jobs:
             || { echo "Foxaris-Farben fehlen im gebauten CSS." >&2; exit 1; }
           echo "Farben im Bau angekommen."
 
-      - name: Abbild bauen
+      - name: Zielpfad im Basis-Abbild prüfen
+        run: |
+          set -euo pipefail
+          # Die Überlagerung kopiert ohne Umweg an diesen Pfad. Gäbe es ihn
+          # nicht mehr, entstünde stillschweigend ein neues Verzeichnis und das
+          # Abbild käme unverändert heraus – deshalb vorher nachsehen.
+          docker run --rm --entrypoint sh "$BASE_IMAGE" -c \
+            'test -d /var/www/euro-office/documentserver/web-apps' \
+            || { echo "Pfad /var/www/euro-office/documentserver/web-apps fehlt im Basis-Abbild." >&2; exit 1; }
+
+      - name: Buildx einrichten
+        uses: docker/setup-buildx-action@v3
+
+      - name: Überlagerung beschreiben
         run: |
           set -euo pipefail
           cat > overlay.Dockerfile <<'EOF'
           ARG BASE_IMAGE
           FROM ${BASE_IMAGE}
-          COPY . /tmp/new-web-apps/
-          # Der Installationspfad hängt am Markennamen (/var/www/<marke>/documentserver);
-          # über das sdkjs-Verzeichnis finden wir ihn, ohne ihn zu kennen.
-          RUN set -eux; \
-              root="$(dirname "$(find /var/www -maxdepth 5 -type d -name sdkjs -path '*documentserver*' | head -n1)")"; \
-              test -n "$root"; \
-              cp -a /tmp/new-web-apps/. "$root/web-apps/"; \
-              rm -rf /tmp/new-web-apps
+          # Nur COPY, kein RUN: Damit braucht der Bau für eine fremde Architektur
+          # keine Emulation, und das Abbild kann für amd64 und arm64 zugleich
+          # entstehen. Der Zielpfad wird im Schritt davor geprüft.
+          COPY . /var/www/euro-office/documentserver/web-apps/
           EOF
-          docker build \
+
+      - name: Prüf-Abbild bauen
+        run: |
+          set -euo pipefail
+          docker buildx build \
+            --platform linux/amd64 --load \
             --build-arg BASE_IMAGE="$BASE_IMAGE" \
-            -t "$IMAGE:$BASE_TAG" \
-            -t "$IMAGE:$BASE_TAG-${GITHUB_SHA::7}" \
+            -t euro-office-probe:local \
             -f overlay.Dockerfile \
             web-apps/deploy/web-apps
 
@@ -149,12 +162,13 @@ jobs:
           set -euo pipefail
           docker run -d --name probe -p 8099:80 \
             -e JWT_ENABLED=true -e JWT_SECRET=probe-secret \
-            -e EXAMPLE_ENABLED=false "$IMAGE:$BASE_TAG"
+            -e EXAMPLE_ENABLED=false euro-office-probe:local
           for i in $(seq 1 90); do
             if curl -fsS http://localhost:8099/healthcheck | grep -q true; then break; fi
             sleep 2
           done
           curl -fsS http://localhost:8099/healthcheck | grep -q true
+          # Läge die Überlagerung am falschen Ort, stünde hier die Vorgabe #446995.
           curl -fsSL http://localhost:8099/web-apps/apps/documenteditor/main/app.css \
             | grep -q -- '--toolbar-header-document: *#ea580c'
           curl -fsSL http://localhost:8099/web-apps/apps/api/documents/api.js \
@@ -176,6 +190,13 @@ jobs:
       - name: Veröffentlichen
         run: |
           set -euo pipefail
-          docker push "$IMAGE:$BASE_TAG"
-          docker push "$IMAGE:$BASE_TAG-${GITHUB_SHA::7}"
-          echo "veröffentlicht: $IMAGE:$BASE_TAG"
+          # Beide Architekturen, weil das Basis-Abbild sie beide führt. Ein reines
+          # amd64-Abbild liefe auf Apple-Silicon-Rechnern nur emuliert.
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 --push \
+            --build-arg BASE_IMAGE="$BASE_IMAGE" \
+            -t "$IMAGE:$BASE_TAG" \
+            -t "$IMAGE:$BASE_TAG-${GITHUB_SHA::7}" \
+            -f overlay.Dockerfile \
+            web-apps/deploy/web-apps
+          echo "veröffentlicht: $IMAGE:$BASE_TAG (amd64 + arm64)"
