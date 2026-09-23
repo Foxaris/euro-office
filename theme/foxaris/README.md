@@ -1,39 +1,56 @@
 # Foxaris-Theme
 
 Bringt den Editor in die Farben und das Zeichen von [Foxaris](https://foxaris.com).
-Gebaut wird er von `.github/workflows/foxaris-image.yml`; das Ergebnis liegt als
-Abbild unter `ghcr.io/foxaris/euro-office`.
+Gebaut von `.github/workflows/foxaris-image.yml`; das Ergebnis liegt als Abbild unter
+`ghcr.io/foxaris/euro-office`.
 
-Dieser Ordner ist **additiv** – er verändert keine Datei des Projekts. Deshalb
-steht er auf einem eigenen Branch, während `main` ein unberührter Spiegel bleibt.
+## Die Entscheidung dahinter
+
+Wir liefern **genau ein Theme** aus: „Modern Hell" (`theme-white`) – das, was das
+Projekt selbst als helle Vorgabe führt (`themeinit.js`, `DEFAULT_LIGHT_THEME_ID`).
+Es hat eine helle Kopfleiste, größere Symbole und eine luftigere Werkzeugleiste
+als das alte `theme-light`.
+
+Unser Orange ist darin **Akzent, kein Band**: Unterstrich des aktiven Reiters,
+Hauptschaltfläche in Dialogen, Fokusrahmen, ausgewählte Vorschau. Die Kopfleiste
+bleibt hell.
 
 ## Was drin steckt
 
 | Datei | Wofür |
 |---|---|
 | `meta/config.json` | Name, Herausgeber, Herkunftshinweis, Dateinamen der Logos |
-| `assets/img/header/foxaris-fox.svg` | Fuchskopf farbig – für helle Flächen |
-| `assets/img/header/foxaris-fox-white.svg` | Fuchskopf weiß – für die Kopfleiste |
+| `assets/img/header/foxaris-fox.svg` | Fuchskopf farbig – Kopfleiste und Ladebild |
+| `assets/img/header/foxaris-fox-white.svg` | Fuchskopf weiß – für dunkle Flächen |
 | `assets/img/about/*` | dieselben beiden für den „Über"-Dialog |
-| `assets/less/overrides/colors.less` | die Oberflächenfarben – das Herzstück |
+| `assets/less/overrides/colors.less` | die Akzentfarben – das Herzstück |
 | `assets/less/overrides/header.less` | Fuchs statt Schriftzug in der Kopfleiste |
 | `assets/less/overrides/about.less` | Logo im „Über"-Dialog |
 | `assets/less/overrides/mobile-overrides.less` | Markenfarbe mobil, Logostreifen aus |
 
-## Die eine Kopplung, die man kennen muss
+Die weißen Fassungen sind derzeit unbenutzt – sie greifen nur in dunklen Themes,
+und die liefern wir nicht aus. Sie bleiben liegen, damit ein späterer dunkler
+Stand nichts nachzuzeichnen hat.
 
-Der weiße Fuchs hat seine Binnenzeichnung in der Kopfleistenfarbe **ausgespart**
-(`#ea580c`, siehe `overrides/colors.less`). Ein ganz weißer Fuchs verliert bei
-20 Pixeln jede Zeichnung und wird zum Fleck; der farbige verschwindet auf Orange.
+## Zwei Eingriffe außerhalb dieses Ordners
 
-Ändern wir also das Orange, muss `foxaris-fox-white.svg` mit. Beide Dateien
-liegen deshalb in diesem Ordner nebeneinander.
+Der Branch war bis dahin rein additiv. Für „ein Theme, keine Auswahl" reichte das
+nicht, weil der Editor beides nicht über die Konfiguration anbietet:
 
-## Was der Editor nicht über diesen Ordner bekommt
+**`apps/common/main/lib/controller/Themes.js`** – `available()` gibt `false` zurück.
+Der Editor entfernt daraufhin von sich aus Gruppe und Trenner aus dem
+Ansicht-Reiter (`ViewTab.js`), in allen Editoren. Der Mechanismus ist vorhanden,
+er war aus der Konfiguration nur nicht erreichbar: Einziger Aufrufer von
+`setAvailable()` ist eine Windows-XP-Prüfung im Desktop-Programm.
 
-Das helle Standard-Theme wird eingefärbt, die dunklen Themes und die neutralen
-Varianten („Grau", „Weiß") bleiben unangetastet. Wer die im Editor unter
-„Ansicht → Design" auswählt, will genau die.
+**`apps/common/main/lib/util/htmlutils.js`** – der Vorbehalt `!window.uitheme.id`
+ist raus, damit ein vom Integrator vorgegebenes Theme gegen eine gespeicherte Wahl
+gewinnt. `themeinit.js` läuft vorher und setzt die Kennung aus dem Browserspeicher;
+ohne diese Änderung bliebe jede früher getroffene Wahl bestehen – und ohne sichtbare
+Auswahl käme niemand mehr davon los.
+
+Beide Stellen sind je eine Zeile. Bei Versionssprüngen können sie einen Konflikt
+geben; beide stehen kommentiert im Quelltext.
 
 ## Lokal ausprobieren
 
@@ -44,5 +61,5 @@ gewöhnliche CSS-Variablen. Im laufenden Container:
 docker exec -u root <container> sh -c 'cat >> /var/www/euro-office/documentserver/web-apps/apps/documenteditor/main/app.css' < assets/less/overrides/colors.less
 ```
 
-Danach den Editor neu laden. Für alles Weitere (Logos, „Über"-Dialog, mobil)
-führt kein Weg am Bau vorbei.
+Danach den Editor neu laden. Für alles Weitere (Logos, „Über"-Dialog, mobil, die
+beiden Eingriffe oben) führt kein Weg am Bau vorbei.

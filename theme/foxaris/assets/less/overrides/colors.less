@@ -1,54 +1,35 @@
 // --------------------------------------------------------------------------
-// Oberflächenfarben
-// Upstream: apps/common/main/resources/less/colors-table.less
+// Akzentfarben
+// Upstream: apps/common/main/resources/less/colors-table-white.less
 //
-// Der Editor legt seine Farben als CSS-Variablen ab, je Theme ein Block:
-// `:root` trägt das helle Standard-Theme, `.theme-classic-light` die klassische
-// Variante, die dunklen Themes eigene Blöcke.
+// Wir liefern genau ein Theme aus: „Modern Hell" (`theme-white`). Dessen
+// Kopfleiste ist hell und bleibt es auch – unser Orange ist Akzent, kein Band.
+// Ersetzt wird deshalb nur, wo der Editor sein Blau als Hervorhebung einsetzt.
 //
-// Angefasst werden nur die hellen. Die dunklen Themes und die neutralen
-// Varianten („Grau", „Weiß") bleiben, wie sie sind – wer die im Editor
-// auswählt, will genau die und nicht unser Orange.
+// Werte: primary-600/700 aus packages/tailwind-preset/index.ts im Monorepo.
+// Literale Hex-Werte statt LESS-Variablen, weil LESS den Inhalt von Custom
+// Properties unverändert durchreicht.
 //
-// Die Werte sind primary-600/700/800 aus packages/tailwind-preset/index.ts
-// im Foxaris-Monorepo. Literale Hex-Werte statt LESS-Variablen, weil LESS
-// den Inhalt von Custom Properties unverändert durchreicht.
+// Bewusst NICHT angefasst: `--highlight-text-select` (Textauswahl im Dokument,
+// in allen Themes blau – eine orange Auswahl über orangem Text wäre schlechter
+// zu lesen) und die Kopfleisten-Token.
 // --------------------------------------------------------------------------
 
-:root,
-:root .theme-light,
-:root .theme-classic-light {
-  // Kopfleiste über dem Dokument – je Dokumentart eine eigene Variable
-  --toolbar-header-document: #ea580c;
-  --toolbar-header-spreadsheet: #ea580c;
-  --toolbar-header-presentation: #ea580c;
-  --toolbar-header-pdf: #ea580c;
-  --toolbar-header-visio: #ea580c;
-
-  // Schaltflächen in der Kopfleiste: heller Schleier. Der dunkle aus der
-  // Voreinstellung wäre auf Orange kaum zu sehen.
-  --highlight-header-button-hover: rgba(255, 255, 255, 0.15);
-  --highlight-header-button-pressed: rgba(255, 255, 255, 0.25);
-
-  // Reiterbeschriftung, wenn die Reiter auf dem hellen Band unter der
-  // Kopfleiste sitzen (customization.tabBackground = 'toolbar')
-  --text-toolbar-header-on-background-document: #9a3412;
-  --text-toolbar-header-on-background-spreadsheet: #9a3412;
-  --text-toolbar-header-on-background-presentation: #9a3412;
-  --text-toolbar-header-on-background-pdf: #9a3412;
-  --text-toolbar-header-on-background-visio: #9a3412;
-
-  // Unterstrich des aktiven Reiters
+:root .theme-white {
+  // Unterstrich des aktiven Reiters – je Dokumentart eine eigene Variable
   --highlight-toolbar-tab-underline-document: #ea580c;
   --highlight-toolbar-tab-underline-spreadsheet: #ea580c;
   --highlight-toolbar-tab-underline-presentation: #ea580c;
   --highlight-toolbar-tab-underline-pdf: #ea580c;
   --highlight-toolbar-tab-underline-visio: #ea580c;
 
-  // Akzente: Hauptschaltfläche in Dialogen, Fokusrahmen
+  // Hauptschaltfläche in Dialogen und Akzentflächen
   --background-accent-button: #ea580c;
   --background-primary-dialog-button: #ea580c;
   --highlight-primary-dialog-button-hover: #c2410c;
   --highlight-primary-dialog-button-pressed: #c2410c;
+
+  // Rahmen: Eingabefeld mit Fokus, ausgewählte Vorschau (z. B. Formatvorlage)
   --border-control-focus: #ea580c;
+  --border-preview-select: #ea580c;
 }

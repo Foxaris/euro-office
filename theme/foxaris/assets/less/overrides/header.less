@@ -4,11 +4,9 @@
 //
 // Dort steht ein Schriftzug von 86 × 20 Pixeln, in zwei Fassungen: `i` für die
 // dunkle Kopfleiste, `.logo-light i` für die helle. Wir setzen in beiden
-// Fassungen denselben Fuchskopf ein – quadratisch, deshalb die eigene Größe.
+// dieselbe Datei ein – quadratisch, deshalb die eigene Größe.
 //
-// ACHTUNG: Der Fuchs ist weiß mit ausgesparter Binnenzeichnung in der
-// Kopfleistenfarbe (#ea580c, siehe colors.less). Ändert sich diese Farbe,
-// muss foxaris-fox-white.svg mitgeändert werden.
+// Der farbige Fuchs, nicht der weiße: „Modern Hell" hat eine helle Kopfleiste.
 // --------------------------------------------------------------------------
 
 .extra #header-logo {
@@ -24,5 +22,5 @@
 
 .extra #header-logo i,
 .extra #header-logo.logo-light i {
-  background-image: ~"url('@{common-image-const-path}/header/foxaris-fox-white.svg')";
+  background-image: ~"url('@{common-image-const-path}/header/foxaris-fox.svg')";
 }
