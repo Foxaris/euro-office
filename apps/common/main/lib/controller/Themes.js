@@ -519,10 +519,7 @@ define([
             },
 
             available: function () {
-                // Foxaris: Wir liefern genau ein Theme aus („Modern Hell"), deshalb gibt es
-                // nichts auszuwählen. ViewTab entfernt daraufhin Gruppe und Trenner aus dem
-                // Ansicht-Reiter – in allen Editoren. Siehe theme/foxaris/README.md.
-                return false;
+                return !Common.Utils.isIE && !this.locked;
             },
 
             setAvailable: function (value) {

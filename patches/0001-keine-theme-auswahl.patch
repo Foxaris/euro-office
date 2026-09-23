@@ -1,0 +1,16 @@
+diff --git a/apps/common/main/lib/controller/Themes.js b/apps/common/main/lib/controller/Themes.js
+index 1341a074..f6fd5baa 100644
+--- a/apps/common/main/lib/controller/Themes.js
++++ b/apps/common/main/lib/controller/Themes.js
+@@ -519,7 +519,10 @@ define([
+             },
+ 
+             available: function () {
+-                return !Common.Utils.isIE && !this.locked;
++                // Foxaris: Wir liefern genau ein Theme aus („Modern Hell"), deshalb gibt es
++                // nichts auszuwählen. ViewTab entfernt daraufhin Gruppe und Trenner aus dem
++                // Ansicht-Reiter – in allen Editoren. Siehe theme/foxaris/README.md.
++                return false;
+             },
+ 
+             setAvailable: function (value) {

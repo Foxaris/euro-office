@@ -78,11 +78,7 @@ window.Common = {
 }
 
 
-// Foxaris: ohne den `!window.uitheme.id`-Vorbehalt. themeinit.js läuft vorher und setzt
-// die Kennung aus dem Browserspeicher; ohne diese Änderung bliebe jede früher
-// getroffene Wahl für immer bestehen – und ohne sichtbare Auswahl käme niemand
-// mehr davon los. Gibt der Integrator ein Theme vor, gilt das Theme.
-if ( !!params.uitheme ) {
+if ( !window.uitheme.id && !!params.uitheme ) {
     if ( params.uitheme == 'default-dark' ) {
         window.uitheme.id = window.uitheme.DEFAULT_DARK_THEME_ID;
         window.uitheme.type = 'dark';

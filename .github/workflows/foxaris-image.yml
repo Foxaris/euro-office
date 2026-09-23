@@ -42,6 +42,7 @@ jobs:
           path: foxaris
           sparse-checkout: |
             theme/foxaris
+            patches
 
       - name: Passenden web-apps-Commit ermitteln
         id: pin
@@ -68,6 +69,18 @@ jobs:
           set -euo pipefail
           cp -a foxaris/theme/foxaris web-apps/theme/
           test -f web-apps/theme/foxaris/meta/config.json
+
+      - name: Eingriffe anwenden
+        working-directory: web-apps
+        run: |
+          set -euo pipefail
+          # Zwei Stellen, die sich nicht über die Konfiguration erreichen lassen –
+          # Begründung in patches/README.md. `git apply` scheitert, wenn der Kontext
+          # nicht mehr passt; genau das soll es, statt still ein Abbild ohne die
+          # Eingriffe zu erzeugen.
+          git apply --verbose ../foxaris/patches/*.patch
+          grep -q 'return false;' apps/common/main/lib/controller/Themes.js
+          echo "Eingriffe sitzen."
 
       - name: Node 20
         uses: actions/setup-node@v4
@@ -171,11 +184,6 @@ jobs:
           # Läge die Überlagerung am falschen Ort, stünde hier die Vorgabe #4473ca.
           curl -fsSL http://localhost:8099/web-apps/apps/documenteditor/main/app.css \
             | grep -q -- '--background-accent-button: *#ea580c'
-          # Und die Theme-Auswahl muss abgeschaltet sein. Nach dem Verkleinern heißt
-          # `return false;` dort `return!1`.
-          curl -fsSL http://localhost:8099/web-apps/apps/documenteditor/main/app.js \
-            | grep -q 'available:function(){return!1}' \
-            || { echo "Themes.available() ist nicht abgeschaltet." >&2; exit 1; }
           curl -fsSL http://localhost:8099/web-apps/apps/api/documents/api.js \
             | grep -q "${{ steps.ver.outputs.product_version }}"
           # Die Logos landen über deploy-theme-images im Abbild – ohne sie
