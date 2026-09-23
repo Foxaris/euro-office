@@ -117,9 +117,9 @@ jobs:
           set -euo pipefail
           CSS=web-apps/deploy/web-apps/apps/documenteditor/main/app.css
           test -f "$CSS"
-          # Wäre das Theme nicht eingeflossen, stünde hier die Vorgabe #446995.
-          grep -q -- '--toolbar-header-document: *#ea580c' "$CSS" \
-            || { echo "Foxaris-Farben fehlen im gebauten CSS." >&2; exit 1; }
+          # Wäre das Theme nicht eingeflossen, stünde hier die Vorgabe #4473ca.
+          grep -q -- '--background-accent-button: *#ea580c' "$CSS" \
+            || { echo "Foxaris-Akzentfarbe fehlt im gebauten CSS." >&2; exit 1; }
           echo "Farben im Bau angekommen."
 
       - name: Zielpfad im Basis-Abbild prüfen
@@ -168,15 +168,20 @@ jobs:
             sleep 2
           done
           curl -fsS http://localhost:8099/healthcheck | grep -q true
-          # Läge die Überlagerung am falschen Ort, stünde hier die Vorgabe #446995.
+          # Läge die Überlagerung am falschen Ort, stünde hier die Vorgabe #4473ca.
           curl -fsSL http://localhost:8099/web-apps/apps/documenteditor/main/app.css \
-            | grep -q -- '--toolbar-header-document: *#ea580c'
+            | grep -q -- '--background-accent-button: *#ea580c'
+          # Und die Theme-Auswahl muss abgeschaltet sein. Nach dem Verkleinern heißt
+          # `return false;` dort `return!1`.
+          curl -fsSL http://localhost:8099/web-apps/apps/documenteditor/main/app.js \
+            | grep -q 'available:function(){return!1}' \
+            || { echo "Themes.available() ist nicht abgeschaltet." >&2; exit 1; }
           curl -fsSL http://localhost:8099/web-apps/apps/api/documents/api.js \
             | grep -q "${{ steps.ver.outputs.product_version }}"
           # Die Logos landen über deploy-theme-images im Abbild – ohne sie
           # zeigt die Kopfleiste ein leeres Feld statt des Fuchses.
           curl -fsSL -o /dev/null \
-            http://localhost:8099/web-apps/apps/common/main/resources/img/header/foxaris-fox-white.svg
+            http://localhost:8099/web-apps/apps/common/main/resources/img/header/foxaris-fox.svg
           docker rm -f probe
           echo "Abbild antwortet, trägt Farben, Logo und die erwartete Version."
 
